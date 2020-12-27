@@ -15,7 +15,7 @@
  */
 
 metadata {
-	definition (name: "Samsung Smart Camera", namespace: "zhangquan0126", author: "Quan Zhang") {
+	definition (name: "Samsung SmartCam Camera", namespace: "melchi45", author: "Youngho Kim") {
         capability "Configuration"
         capability "Image Capture"
 	    capability "Sensor"
