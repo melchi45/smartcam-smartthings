@@ -8,3 +8,6 @@ https://github.com/DaveGut/SmartThings_Cloud-Based_TP-Link-Plugs-Switches-Bulbs/
 
 # SmartThings Dev. Potal
 https://smartthings.developer.samsung.com/docs/index.html
+
+# Smartthings Groovy IDE
+https://graph-ap02-apnortheast2.api.smartthings.com/
