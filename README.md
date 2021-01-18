@@ -5,3 +5,6 @@ This Service Manager and the associated Device Handlers are in no way sanctioned
 # Installation:
 Please refer to the below document on how to add the code to the smartthings ide:
 https://github.com/DaveGut/SmartThings_Cloud-Based_TP-Link-Plugs-Switches-Bulbs/blob/master/Documentation/Installation%20-%20Cloud%20TP-Link%20to%20SmartThing.pdf
+
+# SmartThings Dev. Potal
+https://smartthings.developer.samsung.com/docs/index.html
