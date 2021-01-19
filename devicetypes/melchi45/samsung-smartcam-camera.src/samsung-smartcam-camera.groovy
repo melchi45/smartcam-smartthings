@@ -88,7 +88,11 @@ metadata {
 
 	preferences {
         input("CameraIP", "string", title:"Camera IP Address", description: "Please enter your camera's IP Address", required: true, displayDuringSetup: true)
+        input("CameraPort", "string", title:"Camera HTTP Port", description: "Please enter your camera's HTTP Port", required: true, displayDuringSetup: true)
         input("VideoIP", "string", title:"Video IP Address", description: "Please enter your camera's IP Address (use external IP if you are using port forwarding)", required: true, displayDuringSetup: true)
+        input("Profile", "string", title:"Profile Name", description: "Please enter your camera's Profile Name", required: true, displayDuringSetup: true)
+        input("Channel", "string", title:"Channel Number", description: "Please enter your camera's Channel Number", required: true, displayDuringSetup: true)
+        input("RTSPPort", "string", title:"RTSP Port", description: "Please enter your camera's RTSP Port (use external Port if you are using port forwarding)", required: true, displayDuringSetup: true)
         input("CameraUser", "string", title:"Camera User", description: "Please enter your camera's username (default: admin)", defaultValue: "admin", required: false, displayDuringSetup: true)
         input("CameraPassword", "password", title:"Camera Password", description: "Please enter your camera's password", required: true, displayDuringSetup: true)
 	}
@@ -104,8 +108,8 @@ mappings {
 def start() {
 	log.trace "start()"
 	def dataLiveVideo = [
-		OutHomeURL  : "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:554/onvif/profile5/media.smp",
-		InHomeURL   : "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:554/onvif/profile5/media.smp",
+		OutHomeURL  : "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:${state.RTSPPort}/${state.Profile}/media.smp",
+		InHomeURL   : "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:${state.RTSPPort}/${state.Profile}/media.smp",
 		ThumbnailURL: "http://cdn.device-icons.smartthings.com/camera/dlink-indoor@2x.png",
 		cookie      : [key: "key", value: "value"]
 	]
@@ -123,7 +127,7 @@ def start() {
 }
 
 def getInHomeURL() {
-	 [InHomeURL: "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:554/onvif/profile5/media.smp"]
+	 [InHomeURL: "rtsp://${state.cameraUsername}:${state.cameraPassword}@${state.videoIP}:${state.RTSPPort}/${state.Profile}/media.smp"]
 }
 
 def installed() {
@@ -139,19 +143,38 @@ def updated() {
 		state.cameraIP = CameraIP
 		log.debug("New Camera IP: ${state.cameraIP}")
 	}
-    
+
     if (state.videoIP != VideoIP) {
 		state.videoIP = VideoIP
 		log.debug("New Video IP: ${state.videoIP}")
 	}
+    
+    if (state.cameraPort != CameraPort) {
+		state.cameraPort = CameraPort
+		log.debug("New Camera Port: ${state.cameraPort}")
+	}
+    
+  	if (state.Profile != Profile) {
+		state.Profile = Profile
+		log.debug("New Profile Name: ${state.Profile}")
+	}
 
-	state.cameraPort = 80
+  	if (state.RTSPPort != RTSPPort) {
+		state.RTSPPort = RTSPPort
+		log.debug("New RTSP Port: ${state.RTSPPort}")
+	}
 
-	state.cameraUsername = "admin"
+    if (state.cameraUsername != CameraUser) {
+		state.cameraUsername = CameraUser
+		log.debug("New Camera Username: ${state.cameraUsername}")
+	}
+    
+    state.cameraUsername = "admin"
+    log.debug("New Camera Username: ${state.cameraUsername}")
 
 	if (state.cameraPassword != CameraPassword) {
 		state.cameraPassword = CameraPassword
-		log.debug("New Camera Password")
+		log.debug("New Camera Password: ${state.cameraPassword}")
 		clearDigestAuthData()
 	}
 
@@ -295,35 +318,35 @@ def retryLastRequest(data) {
 	}
 	log.debug("About to retry lastRequest: ${state.lastRequest}")
 	def action = createCameraRequest(state.lastRequest.method, state.lastRequest.uri, state.lastRequest.useAuth, state.lastRequest.payload, true)
-	// log.debug("Created retry request: ${action}")
+	log.debug("Created retry request: ${action}")
 	sendHubCommand(action)
 }
 
 def checkMotionDetectionSetting() {
 	log.debug("checkMotionDetectionSetting()")
 	def action = createCameraRequest("GET", "/stw-cgi-rest/eventsources/videoanalysis", true)
-	// log.debug("checking motion detection setting with request: ${action}")
+	log.debug("checking motion detection setting with request: ${action}")
 	sendHubCommand(action)
 }
 
 def checkAudioDetectionSetting() {
 	log.debug("checkMotionDetectionSetting()")
 	def action = createCameraRequest("GET", "/stw-cgi-rest/eventsources/audiodetection", true)
-	// log.debug("checking motion detection setting with request: ${action}")
+	log.debug("checking motion detection setting with request: ${action}")
 	sendHubCommand(action)
 }
 
 def setMotionDetectionSetting(on) {
 	def detectionType = on ? "MotionDetection" : "Off"
 	def action = createCameraRequest("PUT", "/stw-cgi-rest/eventsources/videoanalysis", true, [DetectionType: detectionType])
-	// log.debug("Setting motion detection setting ${on} with request: ${action}")
+	log.debug("Setting motion detection setting ${on} with request: ${action}")
 	sendHubCommand(action)
 }
 
 def setAudioDetectionSetting(on) {
 	def type = on ? true : false
 	def action = createCameraRequest("PUT", "/stw-cgi-rest/eventsources/audiodetection", true, [Enable: type])
-	// log.debug("Setting motion detection setting ${on} with request: ${action}")
+	log.debug("Setting motion detection setting ${on} with request: ${action}")
 	sendHubCommand(action)
 }
 
@@ -366,15 +389,15 @@ private physicalgraph.device.HubAction createCameraRequest(method, uri, useAuth 
 		if (useAuth && state.digestAuthFields) {
 			// Increment nonce count and generate new client nonce (cheat: just MD5 the nonce count)
 			if (!state.digestAuthFields.nc) {
-				// log.debug("Resetting nc to 1")
+				log.debug("Resetting nc to 1")
 				state.digestAuthFields.nc = 1
 			}
 			else {
 				state.digestAuthFields.nc = (state.digestAuthFields.nc + 1) % 1000
-				// log.debug("Incremented nc: ${state.digestAuthFields.nc}")
+				log.debug("Incremented nc: ${state.digestAuthFields.nc}")
 			}
 			state.digestAuthFields.cnonce = md5("${state.digestAuthFields.nc}")
-			// log.debug("Updated cnonce: ${state.digestAuthFields.cnonce}")
+			log.debug("Updated cnonce: ${state.digestAuthFields.cnonce}")
 
 			headers.Authorization = generateDigestAuthHeader(method, uri)
 		}
@@ -390,7 +413,7 @@ private physicalgraph.device.HubAction createCameraRequest(method, uri, useAuth 
 
 		// Use a custom callback because this seems to bypass the need for DNI to be hex IP:port or MAC address
 		def action = new physicalgraph.device.HubAction(data, null, [callback: parseResponse])
-		// log.debug("Created new HubAction, requestId: ${action.requestId}")
+		log.debug("Created new HubAction, requestId: ${action.requestId}")
 
 		// Persist request info in case we need to repeat it
 		state.lastRequest = [:]
@@ -421,18 +444,18 @@ private void handleWWWAuthenticateHeader(header) {
 		if (tokens[0] == "Digest realm") tokens[0] = "realm"
 		state.digestAuthFields[tokens[0]] = tokens[1].replaceAll("\"", "")
 	}
-	// log.debug("Used authenticate header (${header}) to update digestAuthFields: ${state.digestAuthFields}")
+	log.debug("Used authenticate header (${header}) to update digestAuthFields: ${state.digestAuthFields}")
 }
 
 private String generateDigestAuthHeader(method, uri) {
 	def ha1 = md5("${state.cameraUsername}:${state.digestAuthFields.realm}:${state.cameraPassword}")
-	// log.debug("ha1: ${ha1} (${state.cameraUsername}:${state.digestAuthFields.realm}:${state.cameraPassword})")
+	log.debug("ha1: ${ha1} (${state.cameraUsername}:${state.digestAuthFields.realm}:${state.cameraPassword})")
 
 	def ha2 = md5("${method}:${uri}")
-	// log.debug("ha2: ${ha2} (${method}:${uri})")
+	log.debug("ha2: ${ha2} (${method}:${uri})")
 
 	def digestAuth = md5("${ha1}:${state.digestAuthFields.nonce}:${state.digestAuthFields.nc}:${state.digestAuthFields.cnonce}:${state.digestAuthFields.qop}:${ha2}")
-	// log.debug("digestAuth: ${digestAuth} (${ha1}:${state.digestAuthFields.nonce}:${state.digestAuthFields.nc}:${state.digestAuthFields.cnonce}:${state.digestAuthFields.qop}:${ha2})")
+	log.debug("digestAuth: ${digestAuth} (${ha1}:${state.digestAuthFields.nonce}:${state.digestAuthFields.nc}:${state.digestAuthFields.cnonce}:${state.digestAuthFields.qop}:${ha2})")
 	def authHeader = "Digest username=\"${state.cameraUsername}\", realm=\"${state.digestAuthFields.realm}\", nonce=\"${state.digestAuthFields.nonce}\", uri=\"${uri}\", qop=\"${state.digestAuthFields.qop}\", nc=\"${state.digestAuthFields.nc}\", cnonce=\"${state.digestAuthFields.cnonce}\", response=\"${digestAuth}\""
 	return authHeader
 }
